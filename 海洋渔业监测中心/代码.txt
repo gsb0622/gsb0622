@@ -1,0 +1,602 @@
+'备注    2019-09-19 16:47版本
+
+'科学计数法
+Function ZhiToKeXueJiShuFa(zhi As Double, weizhi As Integer, zhishu As Integer) As String
+   zhi = Trim(zhi)
+   If zhishu = 999 Then
+    zhishu = 3
+    End If
+   If Len2(Int(zhi)) >= weizhi And Len2(Int(zhi)) > zhishu Then  '999.999
+   ZhiToKeXueJiShuFa = ZhiToBuQiYouXiaoWei(Left(zhi / (10 ^ (Len2(Int(zhi)) - 1)), weizhi + 1), weizhi) & "×10" & GetShangBiao(Len2(Int(zhi)) - 1)
+   ElseIf GetXiaoShuWei(zhi) >= zhishu Then '0.0009999
+      Dim z As Double
+      Dim zz As String
+      Dim length As Integer
+      length = GetXiaoShuWei(zhi)
+      z = zhi * (10 ^ (length))
+      zz = ZhiToBuQiYouXiaoWei(z, weizhi)
+      ZhiToKeXueJiShuFa = zz & "×10" & GetShangBiao(-(length))
+   Else  '99.99 , 0.9999'
+      If InStr(Left(zhi, weizhi), ".") = 0 Then
+      ZhiToKeXueJiShuFa = ZhiToBuQiYouXiaoWei(Left(zhi, weizhi), weizhi)
+      Else
+        ZhiToKeXueJiShuFa = ZhiToBuQiYouXiaoWei(zhi, weizhi)
+      End If
+   End If
+End Function
+'补齐有效位
+Function ZhiToBuQiYouXiaoWei(zhi As Double, weishu As Integer) As String
+   Dim a As String
+   a = Trim(str(zhi))
+   Dim youxiaowei As Integer
+   youxiaowei = GetYouXiaoWei(zhi)
+   If InStr(zhi, ".") > 0 And youxiaowei < weishu Then '补齐后面的0
+      a = zhi & Replace(10 ^ (weishu - youxiaowei), 1, "")
+   ElseIf InStr(zhi, ".") = 0 And youxiaowei < weishu Then '补齐后面的0
+       a = zhi & "." & Replace(10 ^ (weishu - youxiaowei), 1, "")
+   ElseIf youxiaowei > weishu Then '太多删掉
+      If (InStr(a, ".") = 0) Then
+        a = SubStr(a, 0, weishu)
+      Else
+        Dim k As Integer '小数点后的0
+        k = GetXiaoShuWei(zhi)
+        If k > 0 Then
+         k = k - 1
+        End If
+        a = SubStr(a, 0, weishu + 1 + k)
+      End If
+ End If
+   If (SubStr(zhi, 0, 1) = ".") Then
+   a = "0" & a
+   End If
+   ZhiToBuQiYouXiaoWei = a
+End Function
+'补齐小数点前面那个0
+Function ZhiToBuQiling(zhi) As String
+   Dim a As String
+   ' a = Trim(str(zhi))
+   a = zhi
+   If (SubStr(a, 0, 1) = ".") Then
+   a = "0" & a
+   ZhiToBuQiling = a
+   Else: ZhiToBuQiling = zhi
+   End If
+End Function
+'根据数字获取修约数，val=数字、max=最大修约数 比如0.00098返回2  0.998返回3
+Function GetXiuYueShu(ra As Range, max As Integer) As Integer
+   Dim b As Integer
+   b = GetXiuYueShu2(ra)
+   If b > max Then
+   b = max
+   End If
+   GetXiuYueShu = b
+End Function
+Function GetXiuYueShu2(ra As Range) As Integer
+   Dim val As String
+   val = Trim(ra.Text)
+   If IsNumeric(val) = False Then
+     GetXiuYueShu2 = 3
+   Exit Function
+   End If
+   Dim b As Integer
+   b = Len2(Int(Replace(val, ".", "")))
+   GetXiuYueShu2 = b
+End Function
+Function KeXueZhuanZhi(val As String) As String
+    Dim w As Integer
+    w = InStr(val, "×")
+    If w = 0 Then
+      KeXueZhuanZhi = val
+      Exit Function
+    End If
+    Dim val1 As Double
+    val1 = CDbl(Trim(SubStr(val, 0, w - 1)))
+    Dim a As String
+    a = Trim(SubStr(val, Len(val) - 1, 1))
+    KeXueZhuanZhi = val1 * (10 ^ GetShuZiByShangBiao(a))
+End Function
+'修约函数,val=修约的数、位数=修约保留有效位数、jianchuxian=检出限、zhishu=指数  (小于检出限显示未检出)
+Function XiuYueWeiJianChu(val As String, weishu As Integer, jianchuxian As String, zhishu As Integer) As String
+  XiuYueWeiJianChu = XiuYue(val, weishu, jianchuxian, zhishu)
+  If (InStr(1, XiuYueWeiJianChu, "<") > 0) Then
+      XiuYueWeiJianChu = "未检出"
+  End If
+End Function
+'修约函数,val=修约的数、位数=修约保留有效位数、jianchuxian=检出限、zhishu=指数  (其他：小于检出限显示检出限L)
+Function XiuYueWeiJianChuL(val As String, weishu As Integer, jianchuxian As String, zhishu As Integer) As String
+  XiuYueWeiJianChuL = XiuYue(val, weishu, jianchuxian, zhishu)
+  If (InStr(1, XiuYueWeiJianChuL, "<") > 0) Then
+      XiuYueWeiJianChuL = jianchuxian + "L"
+  End If
+End Function
+'修约函数,val=修约的数、位数=修约保留有效位数、jianchuxian=检出限、zhishu=指数 (小于检出限显示   <数值)
+Function XiuYue(val As String, weishu As Integer, jianchuxian As String, zhishu As Integer) As String
+   Dim shifoufuhao As Boolean
+   If (Mid(val, 1, 1) = "-") Then
+    shifoufuhao = True
+    val = Mid(val, 2)
+   End If
+   If IsNumeric(val) = False Then
+      XiuYue = val
+      Exit Function
+   End If
+   Dim zhi As Double
+   zhi = Round(CDbl(Trim(val)), 15)
+   Dim jianchuxian2 As String
+   jianchuxian2 = jianchuxian
+   jianchuxian = KeXueZhuanZhi(jianchuxian)
+   If IsNumeric(jianchuxian) = True Then
+      If CDbl(Trim(jianchuxian)) > zhi Then
+        If IsNumeric(jianchuxian2) Then
+           XiuYue = "<" + ZhiToBuQiling(jianchuxian)
+           Else: XiuYue = "<" + ZhiToBuQiling(jianchuxian)
+        End If
+      Exit Function
+      End If
+   End If
+   Dim jia As Double
+    If GetYouXiaoWei(zhi) <= weishu Then '刚刚好
+    XiuYue = ZhiToBuQiling(ZhiToKeXueJiShuFa(zhi, weishu, zhishu))
+    Exit Function
+  End If
+  Dim a As String '有效数 加修约数
+  a = SubStr(Int(Replace(zhi, ".", "")), 0, weishu + 1)
+  Dim k As Integer
+  k = GetXiaoShuWei(zhi)
+  If k > 0 Then
+  k = k - 1
+  End If
+  jia = 10 ^ (Len2(Int(zhi)) - weishu - k)
+  '获取基偶
+  If Left(Right(a, 2), 1) <> "." Then
+    jiou = Left(Right(a, 2), 1)
+   Else
+    jiou = Left(Right(a, 3), 1)
+   End If
+   '修约、原值
+   If (Right(a, 1) = 5 And (jiou Mod 2 > 0 Or GetYouXiaoWei(zhi) > weishu + 1)) Then
+     zhi = zhi + jia
+   ElseIf Right(a, 1) > 5 Then
+     zhi = zhi + jia
+   End If
+   '转为科学计数法
+   'XiuYue = ZhiToKeXueJiShuFa(zhi, weishu, zhishu)
+  Dim SZhi As String
+  SZhi = ZhiToKeXueJiShuFa(zhi, weishu, zhishu)
+  If (SubStr(SZhi, 0, 1) = ".") Then
+    SZhi = "0" & SZhi
+  End If
+  XiuYue = SZhi
+  If (shifoufuhao = True) Then
+    XiuYue = "-" + XiuYue
+   End If
+End Function
+'获取有效数
+Function GetYouXiaoShu(zhi As Double, weishu As Integer) As String
+ Dim a As String
+ If GetXiaoShuWei(zhi) = 0 Then
+   a = SubStr(0, weishu, 1)
+   Else
+   a = SubStr(0, weishu, 1)
+ End If
+End Function
+'获取有效数
+Function GetYouXiaoWei(val As Double) As Integer
+  GetYouXiaoWei = Len2(Int(Replace(val, ".", "")))
+End Function
+Function SubStr(str, strIndex, length) As String
+ SubStr = Right(Left(str, strIndex + length), length)
+End Function
+'数字转上标
+Function GetShangBiao(shuzi) As String
+    If shuzi = 1 Then
+      GetShangBiao = "^1"
+    ElseIf shuzi = 2 Then
+      GetShangBiao = "^2"
+    ElseIf shuzi = 3 Then
+      GetShangBiao = "^3"
+    ElseIf shuzi = 4 Then
+      GetShangBiao = "^4"
+    ElseIf shuzi = 5 Then
+      GetShangBiao = "^5"
+    ElseIf shuzi = 6 Then
+      GetShangBiao = "^6"
+    ElseIf shuzi = 7 Then
+      GetShangBiao = "^7"
+    ElseIf shuzi = 8 Then
+      GetShangBiao = "^8"
+    ElseIf shuzi = 9 Then
+      GetShangBiao = "^9"
+    ElseIf shuzi = -1 Then
+      GetShangBiao = "^-1"
+    ElseIf shuzi = -2 Then
+      GetShangBiao = "^-2"
+    ElseIf shuzi = -3 Then
+      GetShangBiao = "^-3"
+    ElseIf shuzi = -4 Then
+      GetShangBiao = "^-4"
+    ElseIf shuzi = -5 Then
+      GetShangBiao = "^-5"
+    ElseIf shuzi = -6 Then
+      GetShangBiao = "^-6"
+    ElseIf shuzi = -7 Then
+      GetShangBiao = "^-7"
+    ElseIf shuzi = -8 Then
+      GetShangBiao = "^-8"
+    ElseIf shuzi = -9 Then
+      GetShangBiao = "^-9"
+     End If
+End Function
+Function GetShuZiByShangBiao(shangbiao As String) As Integer
+    If shangbiao = "^1" Then
+      GetShuZiByShangBiao = 1
+    ElseIf shangbiao = "^2" Then
+      GetShuZiByShangBiao = 2
+    ElseIf shangbiao = "^3" Then
+      GetShuZiByShangBiao = 3
+    ElseIf shangbiao = "^4" Then
+      GetShuZiByShangBiao = 4
+    ElseIf shangbiao = "^5" Then
+      GetShuZiByShangBiao = 5
+    ElseIf shangbiao = "^6" Then
+      GetShuZiByShangBiao = 6
+    ElseIf shangbiao = "^7" Then
+      GetShuZiByShangBiao = 7
+    ElseIf shangbiao = "^8" Then
+      GetShuZiByShangBiao = 8
+    ElseIf shangbiao = "^9" Then
+      GetShuZiByShangBiao = 9
+    ElseIf shangbiao = "^-1" Then
+      GetShuZiByShangBiao = -1
+    ElseIf shangbiao = "^-2" Then
+      GetShuZiByShangBiao = -2
+    ElseIf shangbiao = "^-3" Then
+      GetShuZiByShangBiao = -3
+    ElseIf shangbiao = "^-4" Then
+      GetShuZiByShangBiao = -4
+    ElseIf shangbiao = "^-5" Then
+      GetShuZiByShangBiao = -5
+    ElseIf shangbiao = "^-6" Then
+      GetShuZiByShangBiao = -6
+    ElseIf shangbiao = "^-7" Then
+      GetShuZiByShangBiao = -7
+    ElseIf shangbiao = "^-8" Then
+      GetShuZiByShangBiao = -8
+    ElseIf shangbiao = "^-9" Then
+      GetShuZiByShangBiao = -9
+     End If
+End Function
+'获取小数位
+Function GetXiaoShuWei(shuzi As Double) As Integer
+  Dim s As String
+  s = Trim(str(shuzi))
+  If SubStr(s, 0, 1) = "." Then
+  s = "0" & s
+  End If
+  Dim a As String
+  a = Replace(s, ".", "")
+  GetXiaoShuWei = Len(a) - Len2(Int(a))
+End Function
+'获取位数
+Function Len2(shuzi) As Integer
+  Dim a As Integer
+  If shuzi = 0 Then
+  Len2 = 0
+  Exit Function
+  End If
+  a = Len(Trim(str(Trim(shuzi))))
+  If SubStr(shuzi, 0, 1) = "." And IsNumeric(shuzi) Then
+      a = a + 1
+   End If
+ Len2 = a
+End Function
+Function IsNum(shuzi) As Boolean
+   IsNum = IsNumeric(Trim(shuzi))
+End Function
+'分光工作曲线y=a+bx 参数a
+Function GetQuXianA(a1 As Range, a2 As Range) As String
+  Dim a As String
+  a = Application.WorksheetFunction.Intercept(a2.Columns(1), a1.Columns(1))
+ GetQuXianA = a
+End Function
+'分光工作曲线y=a+bx 参数b
+Function GetQuXianB(a1 As Range, a2 As Range) As String
+  Dim a As String
+  a = Application.WorksheetFunction.Slope(a2.Columns(1), a1.Columns(1))
+ GetQuXianB = a
+End Function
+'分光工作曲线系数R       CORREL(array1, array2)返回单元格区域 array1 和 array2 之间的相关系数。使用相关系数可以确定两种属性之间的关系
+Function GetQuXianR(a1 As Range, a2 As Range) As String
+  Dim a As String
+  a = Application.WorksheetFunction.Correl(a2.Columns(1), a1.Columns(1))
+  If IsError(a) Then
+   GetQuXianR = ""
+   Exit Function
+  End If
+  If (SubStr(a, 0, 1) = ".") Then
+    a = "0" & a
+  End If
+ GetQuXianR = a
+End Function
+'分光工作曲线系数R2       RSQ(known_y's,known_x's)返回根据 known_y's 和 known_x's 中数据点计算得出的 Pearson 乘积矩相关系数的平方
+Function GetQuXianR2(a1 As Range, a2 As Range) As String
+  Dim a As String
+  a = Application.WorksheetFunction.RSq(a2.Columns(1), a1.Columns(1))
+  a = Sqr(a)
+  If IsError(a) Then
+   GetQuXianR2 = ""
+   Exit Function
+  End If
+  If (SubStr(a, 0, 1) = ".") Then
+    a = "0" & a
+  End If
+ GetQuXianR2 = a
+End Function
+'保留小数位数修约方法
+'保留小数后位数weishu ,ah3保留位数后 , ah4要保留位数上的值, 判断后一位数的值
+Function BaoLiuXiaoShuWei(val As String, weishu As Integer) As String
+  Dim ah3, ah4, ah5, ah6, ah7 As String
+  Dim jin1, i, j, zhangdu As Integer
+  ah7 = 0
+  If Abs(val) < (Application.WorksheetFunction.Power(0.1, weishu + 1)) Then
+   val = 0
+  End If
+  If weishu < 0 Then
+   Exit Function
+   End If
+  If IsNumeric(val) = False Then
+      BaoLiuXiaoShuWei = val
+      Exit Function
+  End If
+  val = Format(val)
+  If (Mid(val, 1, 1) = "-") Then
+    shifoufuhao = True
+    val = Mid(val, 2)
+   End If
+  If (InStr(1, val, ".") > 0) Then
+    For j = 1 To (weishu + 5) Step 1
+          val = val & "0"
+        Next j
+  Else
+    val = val + "."
+    For j = 1 To (weishu + 5) Step 1
+          val = val & "0"
+        Next j
+  End If
+  If (InStr(1, val, ".") > 0) Then
+    If weishu = 0 Then
+    ah7 = 1
+    End If
+    ah3 = Mid(val, 1, InStr(1, val, ".") + weishu)
+    ah4 = Mid(val, InStr(1, val, ".") + weishu - ah7, 1)
+    ah5 = Mid(val, InStr(1, val, ".") + weishu + 1, 1)
+    ah6 = Mid(val, InStr(1, val, ".") + weishu + 2)
+    If (ah5 > 5 Or (ah5 = 5 And ah6 <> 0 And ah6 <> "") Or (ah5 = 5 And (ah4 Mod 2) = 1)) Then
+        jin1 = 1
+        For i = 1 To weishu Step 1
+            jin1 = jin1 * 0.1
+        Next i
+        ah3 = ah3 + jin1
+    End If
+  End If
+  If (ah3 < 1 And SubStr(ah3, 0, 1) = ".") Then
+    ah3 = "0" & ah3
+  End If
+  If (InStr(1, ah3, ".") = 0) Then
+   ah3 = ah3 & "."
+  End If
+  zhangdu = Len(ah3)
+  If (zhangdu < weishu + 2) Then
+      For j = 1 To (weishu + 2 - zhangdu) Step 1
+          ah3 = ah3 & "0"
+        Next j
+  End If
+  If (InStrRev(ah3, ".") = Len(ah3)) Then
+    For j = 1 To (weishu) Step 1
+          ah3 = ah3 & "0"
+        Next j
+  Else
+    If (Len(ah3) - InStrRev(ah3, ".") < weishu) Then
+      For j = 1 To (weishu - (Len(ah3) - InStrRev(ah3, "."))) Step 1
+            ah3 = ah3 & "0"
+          Next j
+    End If
+  End If
+  BaoLiuXiaoShuWei = ah3
+  If (shifoufuhao = True) Then
+    BaoLiuXiaoShuWei = "-" + BaoLiuXiaoShuWei
+  End If
+  If (ah7 = 1 And InStr(1, val, ".") > 0) Then
+  BaoLiuXiaoShuWei = Replace(BaoLiuXiaoShuWei, ".", "")
+  End If
+End Function
+
+'小于检出限
+'修约小数位函数  val=修约的数、位数=修约保留有效位数、jianchuxian=检出限、fangshi=小于检出限的显示方式(1：未检出；12:检出限L；其他：<检出限)
+Function XiuYueXiaoShu(val As String, weishu As Integer, jianchuxian As String, fangshi As Integer) As String
+zhi = BaoLiuXiaoShuWei(val, weishu)
+  If IsNumeric(jianchuxian) = True Then
+      If CDbl(Trim(jianchuxian)) > zhi Then
+        If fangshi = 1 Then
+           zhi = "未检出"
+        ElseIf fangshi = 12 Then
+           zhi = jianchuxian + "L"
+           Else: zhi = "<" + ZhiToBuQiling(jianchuxian)
+        End If
+      End If
+   End If
+XiuYueXiaoShu = zhi
+End Function
+'修约结果保留x位有效数，但不超过y位小数  (未考虑科学记数法)
+'jianchuxian=检出限、fangshi=小于检出限的显示方式(1：未检出；12:检出限L；其他：<检出限)
+Function XiuYueYXXS(val As String, x As Integer, y As Integer, jianchuxian As String, fangshi As Integer) As String
+XiuYueYXXS = XiuYue(val, x, jianchuxian, 999)
+If fangshi = 1 Then
+    XiuYueYXXS = XiuYueWeiJianChu(val, x, jianchuxian, 999)
+    End If
+If fangshi = 12 Then
+    XiuYueYXXS = XiuYueWeiJianChuL(val, x, jianchuxian, 999)
+    End If
+If y < Len(Mid(XiuYueYXXS, InStr(XiuYueYXXS, ".") + 1)) Then
+    XiuYueYXXS = XiuYueXiaoShu(val, y, jianchuxian, fangshi)
+End If
+End Function
+
+
+'取恒重最小值方法，数值1shuzhi1，数值2shuzhi2，数值3shuzhi3，数值4shuzhi4，质量差zhiliangcha，恒重取值quzhi
+Function gethz(shuzhi1 As Double, shuzhi2 As Double, shuzhi3 As Double, shuzhi4 As Double, zhiliangcha As Double) As Double
+Dim quzhi As String
+Dim a As String
+Dim b As String
+Dim c As String
+Dim d As String
+Dim z As String
+Dim ad As String
+Dim bd As String
+Dim cd As String
+   a = Trim(shuzhi1)
+   b = Trim(shuzhi2)
+   c = Trim(shuzhi3)
+   d = Trim(shuzhi4)
+   z = Trim(zhiliangcha)
+   If b > 0 Then
+   ab = CInt(Abs(a * 10000 - b * 10000))
+   End If
+   If c > 0 Then
+   ac = CInt(Abs(a * 10000 - c * 10000))
+   bc = CInt(Abs(b * 10000 - c * 10000))
+   End If
+   If d > 0 Then
+    bd = CInt(Abs(b * 10000 - d * 10000))
+    cd = CInt(Abs(c * 10000 - d * 10000))
+    ad = CInt(Abs(a * 10000 - d * 10000))
+   End If
+   If a > 0 And b > 0 And d = 0 And c = 0 Then
+    If ab > z * 10000 Then
+        quzhi = -999  '结果大于质量差，数据填写错误
+        Else: quzhi = Application.Min(a, b)
+        End If
+   End If
+   If a > 0 And b > 0 And c > 0 And d = 0 Then
+     If ab <= z * 10000 Then
+        quzhi = -999  'a,b结果差不大于质量差，数据填写错误
+     Else
+        If ac <= z * 10000 And bc <= z * 10000 Then
+        quzhi = Application.Min(a, b, c)
+        End If
+        If ac <= z * 10000 And bc > z * 10000 Then
+        quzhi = Application.Min(a, c)
+        End If
+        If ac > z * 10000 And bc <= z * 10000 Then
+        quzhi = Application.Min(b, c)
+        End If
+        If ac > z * 10000 And bc > z * 10000 Then
+        quzhi = -999
+        End If
+     End If
+   End If
+   If a > 0 And b > 0 And c > 0 And d > 0 Then
+    If ad <= z * 10000 Or bd <= z * 10000 Or cd <= z * 10000 Then
+        If d = Application.Min(a, b, c, d) Then
+            quzhi = d
+        ElseIf d = Application.max(a, b, c, d) Then
+            quzhi = Application.max(a, b, c)
+        Else
+            If ad = Application.max(ad, bd, cd) Then
+                 If bd <= z * 10000 And cd <= z * 10000 Then
+                   quzhi = Application.Min(b, c, d)
+                 End If
+                 If bd <= z * 10000 And cd > z * 10000 Then
+                 quzhi = Application.Min(b, d)
+                 End If
+                 If bd > z * 10000 And cd <= z * 10000 Then
+                 quzhi = Application.Min(c, d)
+                 End If
+                 If bd > z * 10000 And cd > z * 10000 Then
+                 quzhi = -999
+                 End If
+            End If
+            If bd = Application.max(ad, bd, cd) Then
+                 If ad <= z * 10000 And cd <= z * 10000 Then
+                 quzhi = Application.Min(a, c, d)
+                 End If
+                 If ad <= z * 10000 And cd > z * 10000 Then
+                 quzhi = Application.Min(a, d)
+                 End If
+                 If ad > z * 10000 And cd <= z * 10000 Then
+                 quzhi = Application.Min(c, d)
+                 End If
+                 If ad > z * 10000 And cd > z * 10000 Then
+                 quzhi = -999
+                 End If
+            End If
+            If cd = Application.max(ad, bd, cd) Then
+                If ad <= z * 10000 And bd <= z * 10000 Then
+                 quzhi = Application.Min(a, b, d)
+                 End If
+                 If ad <= z * 10000 And bd > z * 10000 Then
+                 quzhi = Application.Min(a, d)
+                 End If
+                 If ad > z * 10000 And bd <= z * 10000 Then
+                 quzhi = Application.Min(b, d)
+                 End If
+                 If ad > z * 10000 And bd > z * 10000 Then
+                 quzhi = -999
+                 End If
+            End If
+        End If
+    Else: quzhi = -999
+    End If
+   End If
+   gethz = quzhi
+End Function
+
+
+'水分活度测定，取差值最小的算术平均值，数值1shuzhi1，数值2shuzhi2，数值3shuzhi3，数值4shuzhi4，质量差zhiliangcha，取值quzhi
+Function getsfhd(shuzhi1 As Double, shuzhi2 As Double, shuzhi3 As Double, shuzhi4 As Double, zhiliangcha As Double) As Double
+Dim quzhi As String
+Dim a As String
+Dim b As String
+Dim c As String
+Dim d As String
+Dim z As String
+Dim ab As String
+Dim ac As String
+Dim ad As String
+Dim bc As String
+Dim bd As String
+Dim cd As String
+   a = Trim(shuzhi1)
+   b = Trim(shuzhi2)
+   c = Trim(shuzhi3)
+   d = Trim(shuzhi4)
+   If b > 0 Then
+   ab = CInt(Abs(a * 10000 - b * 10000))
+   End If
+   If c > 0 Then
+   ac = CInt(Abs(a * 10000 - c * 10000))
+   bc = CInt(Abs(b * 10000 - c * 10000))
+   End If
+   If d > 0 Then
+    bd = CInt(Abs(b * 10000 - d * 10000))
+    cd = CInt(Abs(c * 10000 - d * 10000))
+    ad = CInt(Abs(a * 10000 - d * 10000))
+   End If
+   If a > 0 And b > 0 And c > 0 And d = 0 Then
+    If ab = bc Or ab = ac Or bc = ac Then
+        quzhi = Application.Median(a, b, c)
+    Else
+        If ab = Application.Min(ab, bc, ac) Then
+        quzhi = Application.Average(a, b)
+        ElseIf ac = Application.Min(ab, bc, ac) Then
+        quzhi = Application.Average(a, c)
+        Else
+        quzhi = Application.Average(b, c)
+        End If
+    End If
+   End If
+   If a > 0 And b > 0 And c > 0 And d > 0 Then
+   quzhi = 1
+   End If
+   getsfhd = quzhi
+End Function

@@ -1,0 +1,48 @@
+=IFERROR(baoliuxiaoshuwei(((G5-基础页!$B$23)*基础页!$B$16)/B5,3),"")
+=IFERROR(IF(ISBLANK(H4),"",BaoLiuXiaoShuWei((H4+0.0017)*C4/E4/10.705,4)),"")
+hesuanjiancehscj@wlZx1233.
+iferror((baoliuxiaoshuwei(F4*J4,2),"")
+SI04-12,  SI01-08, SI04-10,SI04-11. 删除
+=IFERROR(IF(ISBLANK(L4),"",baoliuxiaoshuwei(L4*C4*200,1)),"")
+SI04-01 液质联用分析原始记录及附表（喹诺酮类7项）
+SI13-1菌落（细菌）总数检测原始记录
+SI01-01气相色谱分析原始记录（沉积物）
+SI01-01气相色谱分析原始记录（生物体）
+SI01-01气相色谱分析原始记录（水样）
+=IFERROR(baoliuxiaoshuwei((E5-F5)/(E5+F5)*100%,2),"")
+=IFERROR(IF(ISBLANK(L4),"",baoliuxiaoshuwei(L4*C4*200,1)),"")
+=VLOOKUP(B13,S1:T4,2,)
+超高效液相色谱仪AS274	Waters H-Class
+快速液相色谱仪AS381	LC-20A
+高效液相色谱质谱联用仪AS517	LCMS-8050
+液-质-质谱联用仪AS347	AB Sciex Triple Quad 5500
+
+SH-Rtx-1(30m×0.25mm×0.25μm)
+HP-5 (30m×0.32mm×0.25μm)
+DB-1701(30m×0.25mm×0.25μm)
+不分流进样
+分流进样（分流比  :  ）
+
+
+=IFERROR(baoliuxiaoshuwei(((H5-基础页!$B$22)*基础页!$B$15)/C5,2),"")
+
+
+
+ HP-5MS(30m×0.32mm×0.25μm)
+ DB-5MS(30m×0.25mm×0.25μm)
+不分流进样
+分流进样（分流比  :  ）
+SIM(m/z)
+SCAN(m/z)
+=XiuYue((baoliuxiaoshuwei(((H8-基础页!$B$21)*基础页!$B$14)/(C8*(1-O8/100)*基础页!#REF!)*基础页!#REF!,8)),3,-1,2)
+=IFERROR(IF(ISBLANK(C5),"",(baoliuxiaoshuwei((H5-基础页!$B$21)*基础页!$B$14/(C5*(1-O5%)),9))),"")             归档沉积物公式没有3位有效数字显示
+=IFERROR(XiuYue((baoliuxiaoshuwei((H5-基础页!$B$21)*基础页!$B$14/(C5*(1-O5%)),9)),3,-1,1),"")                     沉积物3位有效数字显示
+=IFERROR(XiuYue((baoliuxiaoshuwei((H5-基础页!$B$21)*基础页!$B$14/C5,9)),3,-1,1),"")                                       生物体3位有效数字显示
+=IFERROR(XiuYue((((H5-基础页!$B$22)*基础页!$B$15/C5)),3,-1,9999),"")
+
+X=(CS-CO)×V1÷m
+X=(CS-CO)×V1÷(m×(1-W))
+
+
+=IFERROR(IF(H5="ND","ND",XiuYue(((H5-基础页!$B$22)*基础页!$B$15/(C5*(1-O5%))),3,-1,9999)),"")
+=IFERROR(xiuyue(J12*10000,2,3,2),"")
